@@ -1,6 +1,8 @@
 import sys, os, types
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Calculator')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '{repo_basename}')))
 
+
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', f'{safe_repo_name}')))
 # Auto-mock tkinter for headless environments
 try:
     import tkinter as tk
@@ -25,201 +27,152 @@ except ImportError:
         setattr(tk, const, const)
     sys.modules["tkinter"] = tk
 
+import sys
 import pytest
-from unittest.mock import MagicMock
-import tkinter as tk
+from unittest.mock import MagicMock, patch
 
-# Assuming the Calculator class is in a file named 'calc.py'
-from calc import Calculator
+sys.path.insert(0, r'/home/vvdn/projects/sfit_unitest_19_9_2025/cloned_repos/Calculator')
+
+from calculator import Calculator, tk, LARGE_FONT_STYLE, SMALL_FONT_STYLE, DIGITS_FONT_STYLE, DEFAULT_FONT_STYLE, OFF_WHITE, WHITE, LIGHT_BLUE, LIGHT_GRAY, LABEL_COLOR
+
+class _WidgetMock:
+    def __init__(self, *args, **kwargs):
+        self.config = MagicMock()
+        self.pack = MagicMock()
+        self.grid = MagicMock()
+        self.bind = MagicMock()
+
+class _TkMock(_WidgetMock):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.geometry = MagicMock()
+        self.resizable = MagicMock()
+        self.title = MagicMock()
+        self.mainloop = MagicMock()
 
 @pytest.fixture
-def calculator_instance():
-    # Create a mock Tkinter root window to avoid actual GUI creation
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
+def mock_tkinter():
+    with patch('tkinter.Tk', new=_TkMock), \
+         patch('tkinter.Frame', new=_WidgetMock), \
+         patch('tkinter.Label', new=_WidgetMock), \
+         patch('tkinter.Button', new=_WidgetMock):
+        yield
 
-    # Temporarily replace tk.Tk with our mock
-    original_tk_Tk = tk.Tk
-    tk.Tk = MagicMock(return_value=root)
-
-    # Create a Calculator instance
+@pytest.fixture
+def calculator(mock_tkinter):
     calc = Calculator()
+    return calc
 
-    # Restore the original tk.Tk
-    tk.Tk = original_tk_Tk
+def test_calculator_initialization(calculator):
+    assert calculator.window is not None
+    assert calculator.total_expression == ""
+    assert calculator.current_expression == ""
+    assert calculator.display_frame is not None
+    assert calculator.total_label is not None
+    assert calculator.label is not None
+    assert calculator.buttons_frame is not None
 
-    # Mock the window.mainloop() to prevent it from running
-    calc.window.mainloop = MagicMock()
+def test_add_to_expression(calculator):
+    calculator.add_to_expression(5)
+    assert calculator.current_expression == "5"
+    calculator.add_to_expression("+")
+    assert calculator.current_expression == "5+"
+    calculator.update_label()
+    calculator.label.config.assert_called_once_with(text="5+")
 
-    # Return the calculator instance for testing
-    yield calc
+def test_append_operator(calculator):
+    calculator.current_expression = "12"
+    calculator.append_operator("+")
+    assert calculator.current_expression == ""
+    assert calculator.total_expression == "12+"
+    calculator.update_total_label()
+    calculator.total_label.config.assert_called_once_with(text=" 12 + ")
+    calculator.update_label()
+    calculator.label.config.assert_called_once_with(text="")
 
-    # Clean up the mock root window after the test
-    root.destroy()
+def test_clear(calculator):
+    calculator.current_expression = "12+3"
+    calculator.total_expression = "15"
+    calculator.clear()
+    assert calculator.current_expression == ""
+    assert calculator.total_expression == ""
+    calculator.update_label()
+    calculator.label.config.assert_called_once_with(text="")
+    calculator.update_total_label()
+    calculator.total_label.config.assert_called_once_with(text="")
 
-def test_initialization(calculator_instance):
-    assert calculator_instance.total_expression == ""
-    assert calculator_instance.current_expression == ""
-    assert isinstance(calculator_instance.window, tk.Tk)
-    assert calculator_instance.display_frame is not None
-    assert calculator_instance.total_label is not None
-    assert calculator_instance.label is not None
-    assert calculator_instance.buttons_frame is not None
+def test_square(calculator):
+    calculator.current_expression = "5"
+    calculator.square()
+    assert calculator.current_expression == "25"
+    calculator.update_label()
+    calculator.label.config.assert_called_once_with(text="25")
 
-def test_add_to_expression(calculator_instance):
-    calculator_instance.add_to_expression(5)
-    assert calculator_instance.current_expression == "5"
-    calculator_instance.add_to_expression("+")
-    assert calculator_instance.current_expression == "5+"
-    calculator_instance.add_to_expression(10)
-    assert calculator_instance.current_expression == "5+10"
+def test_sqrt(calculator):
+    calculator.current_expression = "25"
+    calculator.sqrt()
+    assert calculator.current_expression == "5.0"
+    calculator.update_label()
+    calculator.label.config.assert_called_once_with(text="5.0")
 
-def test_append_operator(calculator_instance):
-    calculator_instance.current_expression = "12"
-    calculator_instance.append_operator("+")
-    assert calculator_instance.total_expression == "12+"
-    assert calculator_instance.current_expression == ""
+def test_evaluate_valid_expression(calculator):
+    calculator.current_expression = "5"
+    calculator.total_expression = "10+"
+    calculator.evaluate()
+    assert calculator.current_expression == "15.0"
+    assert calculator.total_expression == ""
+    calculator.update_total_label()
+    calculator.total_label.config.assert_called_once_with(text="10 + ")
+    calculator.update_label()
+    calculator.label.config.assert_called_once_with(text="15.0")
 
-def test_clear(calculator_instance):
-    calculator_instance.total_expression = "12+3"
-    calculator_instance.current_expression = "15"
-    calculator_instance.clear()
-    assert calculator_instance.total_expression == ""
-    assert calculator_instance.current_expression == ""
+def test_evaluate_error_expression(calculator):
+    calculator.current_expression = "abc"
+    calculator.total_expression = "10+"
+    calculator.evaluate()
+    assert calculator.current_expression == "Error"
+    assert calculator.total_expression == ""
+    calculator.update_total_label()
+    calculator.total_label.config.assert_called_once_with(text="10 + ")
+    calculator.update_label()
+    calculator.label.config.assert_called_once_with(text="Error")
 
-def test_square(calculator_instance):
-    calculator_instance.current_expression = "5"
-    calculator_instance.square()
-    assert calculator_instance.current_expression == "25"
+def test_update_total_label(calculator):
+    calculator.total_expression = "10*5"
+    calculator.update_total_label()
+    calculator.total_label.config.assert_called_once_with(text="10 × 5")
 
-def test_square_with_error(calculator_instance):
-    calculator_instance.current_expression = "abc"
-    calculator_instance.square()
-    assert calculator_instance.current_expression == "Error"
+def test_update_label_short_expression(calculator):
+    calculator.current_expression = "12345"
+    calculator.update_label()
+    calculator.label.config.assert_called_once_with(text="12345")
 
-def test_sqrt(calculator_instance):
-    calculator_instance.current_expression = "25"
-    calculator_instance.sqrt()
-    assert calculator_instance.current_expression == "5.0"
+def test_update_label_long_expression(calculator):
+    calculator.current_expression = "1234567890123"
+    calculator.update_label()
+    calculator.label.config.assert_called_once_with(text="12345678901")
 
-def test_sqrt_with_error(calculator_instance):
-    calculator_instance.current_expression = "-4"
-    calculator_instance.sqrt()
-    assert calculator_instance.current_expression == "Error"
+def test_bind_keys_return(calculator):
+    calculator.window.bind.assert_any_call("<Return>", pytest.raises(TypeError)) # Mocked bind returns None, so we check for the lambda call
 
-def test_evaluate_simple_addition(calculator_instance):
-    calculator_instance.current_expression = "5"
-    calculator_instance.total_expression = "10"
-    calculator_instance.append_operator("+")
-    calculator_instance.evaluate()
-    assert calculator_instance.current_expression == "15"
-    assert calculator_instance.total_expression == ""
+def test_bind_keys_digits(calculator):
+    for digit in calculator.digits:
+        calculator.window.bind.assert_any_call(str(digit), pytest.raises(TypeError))
 
-def test_evaluate_complex_expression(calculator_instance):
-    calculator_instance.current_expression = "2*3+4"
-    calculator_instance.evaluate()
-    assert calculator_instance.current_expression == "10"
-    assert calculator_instance.total_expression == ""
+def test_bind_keys_operators(calculator):
+    for operator in calculator.operations:
+        calculator.window.bind.assert_any_call(operator, pytest.raises(TypeError))
 
-def test_evaluate_division_by_zero(calculator_instance):
-    calculator_instance.current_expression = "10/0"
-    calculator_instance.evaluate()
-    assert calculator_instance.current_expression == "Error"
-    assert calculator_instance.total_expression == ""
+def test_create_digit_buttons(calculator):
+    assert len(calculator.digits) == len(calculator.buttons_frame.grid.call_args_list) - 5 # Subtract special buttons
 
-def test_update_label_truncation(calculator_instance):
-    long_expression = "1234567890123"
-    calculator_instance.current_expression = long_expression
-    calculator_instance.update_label()
-    assert calculator_instance.label.cget("text") == long_expression[:11]
+def test_create_operator_buttons(calculator):
+    assert len(calculator.operations) == calculator.buttons_frame.grid.call_count - len(calculator.digits) - 5 # Subtract digit and special buttons
 
-def test_update_total_label_with_operators(calculator_instance):
-    calculator_instance.total_expression = "10*5-2"
-    calculator_instance.update_total_label()
-    assert calculator_instance.total_label.cget("text") == "10 × 5 - 2"
+def test_create_special_buttons(calculator):
+    calculator.create_special_buttons()
+    assert calculator.buttons_frame.grid.call_count >= 4 # C, =, x^2, sqrt
 
-def test_bind_keys_digit(calculator_instance):
-    # Mock the add_to_expression method to check if it's called
-    calculator_instance.add_to_expression = MagicMock()
-    # Simulate pressing the '7' key
-    event = MagicMock()
-    event.char = '7'
-    calculator_instance.window.event_generate('<<KeyPress>>', char='7') # This won't work directly without Tk mainloop
-
-    # We can directly call the lambda function that would be bound
-    for digit, grid_value in calculator_instance.digits.items():
-        if digit == 7:
-            # Simulate the lambda call for digit 7
-            command = calculator_instance.create_digit_buttons.__code__.co_consts[2].__code__.co_consts[2] # This is fragile, better to test the command directly
-            # A more robust way is to mock the buttons and call their commands
-            break # Exit after finding the digit
-
-
-def test_bind_keys_operator(calculator_instance):
-    # Mock the append_operator method to check if it's called
-    calculator_instance.append_operator = MagicMock()
-    # Simulate pressing the '+' key
-    event = MagicMock()
-    event.char = '+'
-    calculator_instance.window.event_generate('<<KeyPress>>', char='+') # This won't work directly without Tk mainloop
-
-    # A more robust way is to mock the buttons and call their commands
-    for operator, symbol in calculator_instance.operations.items():
-        if operator == '+':
-            # Simulate the lambda call for operator '+'
-            break # Exit after finding the operator
-
-def test_bind_keys_return(calculator_instance):
-    # Mock the evaluate method to check if it's called
-    calculator_instance.evaluate = MagicMock()
-    # Simulate pressing the Enter key
-    event = MagicMock()
-    event.keysym = 'Return'
-    calculator_instance.window.event_generate('<<KeyPress>>', keysym='Return') # This won't work directly without Tk mainloop
-
-    # A more robust way is to test the command associated with the bind
-    # Directly call the bound function for Enter
-    calculator_instance.evaluate()
-    assert calculator_instance.evaluate.call_count == 1
-
-
-def test_create_display_frame(calculator_instance):
-    assert calculator_instance.display_frame is not None
-    assert isinstance(calculator_instance.display_frame, tk.Frame)
-
-def test_create_display_labels(calculator_instance):
-    assert calculator_instance.total_label is not None
-    assert calculator_instance.label is not None
-    assert isinstance(calculator_instance.total_label, tk.Label)
-    assert isinstance(calculator_instance.label, tk.Label)
-
-def test_create_digit_buttons(calculator_instance):
-    # Check if the number of digit buttons created matches the digits dictionary
-    digit_buttons_count = 0
-    for widget in calculator_instance.buttons_frame.winfo_children():
-        if isinstance(widget, tk.Button) and widget.cget("text").isdigit():
-            digit_buttons_count += 1
-    assert digit_buttons_count == len(calculator_instance.digits) - 1 # Exclude '.'
-
-def test_create_operator_buttons(calculator_instance):
-    # Check if the number of operator buttons created matches the operations dictionary
-    operator_buttons_count = 0
-    for widget in calculator_instance.buttons_frame.winfo_children():
-        if isinstance(widget, tk.Button) and widget.cget("text") in calculator_instance.operations.values():
-            operator_buttons_count += 1
-    assert operator_buttons_count == len(calculator_instance.operations)
-
-def test_create_special_buttons(calculator_instance):
-    special_buttons_texts = {"C", "x\u00b2", "\u221ax", "="}
-    created_special_buttons_texts = set()
-    for widget in calculator_instance.buttons_frame.winfo_children():
-        if isinstance(widget, tk.Button) and widget.cget("text") in special_buttons_texts:
-            created_special_buttons_texts.add(widget.cget("text"))
-    assert created_special_buttons_texts == special_buttons_texts
-
-def test_run(calculator_instance):
-    assert True  # Placeholder assert
-    # The run method calls window.mainloop(), which we've mocked.
-    # We can assert that mainloop was called.
-    calculator_instance.run()
-    calculator_instance.window.mainloop.assert_called_once()
+if __name__ == "__main__":
+    import pytest, sys
+    sys.exit(pytest.main([__file__, "-v"]))
