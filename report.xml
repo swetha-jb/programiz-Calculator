@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="8" skipped="0" tests="22" time="0.202" timestamp="2025-09-29T06:33:47.335268+00:00" hostname="4d5493eee181"><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_initialization" time="0.017" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_add_to_expression" time="0.001" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_append_operator" time="0.001" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_clear" time="0.001" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_square" time="0.001" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_square_with_error" time="0.001"><failure message="NameError: name 'abc' is not defined">calculator_instance = &lt;calc.Calculator object at 0x7ac57ef464c0&gt;
+
+    def test_square_with_error(calculator_instance):
+        calculator_instance.current_expression = "abc"
+&gt;       calculator_instance.square()
+
+programiz-Calculator/test_Calculator_cases.py:97: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+programiz-Calculator/calc.py:113: in square
+    self.current_expression = str(eval(f"{self.current_expression}**2"))
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+&gt;   ???
+E   NameError: name 'abc' is not defined
+
+&lt;string&gt;:1: NameError</failure></testcase><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_sqrt" time="0.001" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_sqrt_with_error" time="0.002"><failure message="AssertionError: assert '-2.0' == 'Error'&#10;  &#10;  - Error&#10;  + -2.0">calculator_instance = &lt;calc.Calculator object at 0x7ac57ef50340&gt;
+
+    def test_sqrt_with_error(calculator_instance):
+        calculator_instance.current_expression = "-4"
+        calculator_instance.sqrt()
+&gt;       assert calculator_instance.current_expression == "Error"
+E       AssertionError: assert '-2.0' == 'Error'
+E         
+E         - Error
+E         + -2.0
+
+programiz-Calculator/test_Calculator_cases.py:108: AssertionError</failure></testcase><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_evaluate_simple_addition" time="0.002"><failure message="AssertionError: assert 'Error' == '15'&#10;  &#10;  - 15&#10;  + Error">calculator_instance = &lt;calc.Calculator object at 0x7ac57ef77d00&gt;
+
+    def test_evaluate_simple_addition(calculator_instance):
+        calculator_instance.current_expression = "5"
+        calculator_instance.total_expression = "10"
+        calculator_instance.append_operator("+")
+        calculator_instance.evaluate()
+&gt;       assert calculator_instance.current_expression == "15"
+E       AssertionError: assert 'Error' == '15'
+E         
+E         - 15
+E         + Error
+
+programiz-Calculator/test_Calculator_cases.py:115: AssertionError</failure></testcase><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_evaluate_complex_expression" time="0.001" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_evaluate_division_by_zero" time="0.002"><failure message="AssertionError: assert '10/0' == ''&#10;  &#10;  + 10/0">calculator_instance = &lt;calc.Calculator object at 0x7ac57efa6b80&gt;
+
+    def test_evaluate_division_by_zero(calculator_instance):
+        calculator_instance.current_expression = "10/0"
+        calculator_instance.evaluate()
+        assert calculator_instance.current_expression == "Error"
+&gt;       assert calculator_instance.total_expression == ""
+E       AssertionError: assert '10/0' == ''
+E         
+E         + 10/0
+
+programiz-Calculator/test_Calculator_cases.py:128: AssertionError</failure></testcase><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_update_label_truncation" time="0.001" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_update_total_label_with_operators" time="0.002" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_bind_keys_digit" time="0.002"><failure message="AttributeError: 'code' object has no attribute '__code__'">calculator_instance = &lt;calc.Calculator object at 0x7ac57ef8d280&gt;
+
+    def test_bind_keys_digit(calculator_instance):
+        # Mock the add_to_expression method to check if it's called
+        calculator_instance.add_to_expression = MagicMock()
+        # Simulate pressing the '7' key
+        event = MagicMock()
+        event.char = '7'
+        calculator_instance.window.event_generate('&lt;&lt;KeyPress&gt;&gt;', char='7') # This won't work directly without Tk mainloop
+    
+        # We can directly call the lambda function that would be bound
+        for digit, grid_value in calculator_instance.digits.items():
+            if digit == 7:
+                # Simulate the lambda call for digit 7
+&gt;               command = calculator_instance.create_digit_buttons.__code__.co_consts[2].__code__.co_consts[2] # This is fragile, better to test the command directly
+E               AttributeError: 'code' object has no attribute '__code__'
+
+programiz-Calculator/test_Calculator_cases.py:153: AttributeError</failure></testcase><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_bind_keys_operator" time="0.002" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_bind_keys_return" time="0.002" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_create_display_frame" time="0.002" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_create_display_labels" time="0.001" /><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_create_digit_buttons" time="0.001"><failure message="TypeError: 'NoneType' object is not iterable">calculator_instance = &lt;calc.Calculator object at 0x7ac57eee9b20&gt;
+
+    def test_create_digit_buttons(calculator_instance):
+        # Check if the number of digit buttons created matches the digits dictionary
+        digit_buttons_count = 0
+&gt;       for widget in calculator_instance.buttons_frame.winfo_children():
+E       TypeError: 'NoneType' object is not iterable
+
+programiz-Calculator/test_Calculator_cases.py:199: TypeError</failure></testcase><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_create_operator_buttons" time="0.001"><failure message="TypeError: 'NoneType' object is not iterable">calculator_instance = &lt;calc.Calculator object at 0x7ac57eee4760&gt;
+
+    def test_create_operator_buttons(calculator_instance):
+        # Check if the number of operator buttons created matches the operations dictionary
+        operator_buttons_count = 0
+&gt;       for widget in calculator_instance.buttons_frame.winfo_children():
+E       TypeError: 'NoneType' object is not iterable
+
+programiz-Calculator/test_Calculator_cases.py:207: TypeError</failure></testcase><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_create_special_buttons" time="0.001"><failure message="TypeError: 'NoneType' object is not iterable">calculator_instance = &lt;calc.Calculator object at 0x7ac57ef132b0&gt;
+
+    def test_create_special_buttons(calculator_instance):
+        special_buttons_texts = {"C", "x\u00b2", "\u221ax", "="}
+        created_special_buttons_texts = set()
+&gt;       for widget in calculator_instance.buttons_frame.winfo_children():
+E       TypeError: 'NoneType' object is not iterable
+
+programiz-Calculator/test_Calculator_cases.py:215: TypeError</failure></testcase><testcase classname="programiz-Calculator.test_Calculator_cases" name="test_run" time="0.002" /></testsuite></testsuites>
