@@ -1,0 +1,122 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<robot generator="Robot 7.3.2 (Python 3.11.13 on linux)" generated="2025-09-30T08:01:49.153544" rpa="false" schemaversion="5">
+<suite id="s1" name="2025-09-30T13-31-47" source="/app/robot_new_two/2025-09-30T13-31-47">
+<suite id="s1-s1" name="Robot New Two" source="/app/robot_new_two/2025-09-30T13-31-47/robot_new_two">
+<suite id="s1-s1-s1" name="Tests" source="/app/robot_new_two/2025-09-30T13-31-47/robot_new_two/tests">
+<suite id="s1-s1-s1-s1" name="Test Login" source="/app/robot_new_two/2025-09-30T13-31-47/robot_new_two/tests/test_login.robot">
+<test id="s1-s1-s1-s1-t1" name="Verify Example Page Title" line="16">
+<kw name="Open Browser To Example" type="SETUP">
+<kw name="Chrome Options" owner="chromedriver_wrapper">
+<msg time="2025-09-30T08:01:49.375539" level="INFO">${options} = &lt;selenium.webdriver.chrome.options.Options object at 0x7eeb48398e10&gt;</msg>
+<var>${options}</var>
+<doc>Return ChromeOptions with Docker-safe flags.</doc>
+<status status="PASS" start="2025-09-30T08:01:49.375251" elapsed="0.000344"/>
+</kw>
+<kw name="Open Browser" owner="SeleniumLibrary">
+<msg time="2025-09-30T08:01:49.376303" level="INFO">Opening browser 'chrome' to base url 'https://example.com'.</msg>
+<arg>${URL}</arg>
+<arg>chrome</arg>
+<arg>options=${options}</arg>
+<doc>Opens a new browser instance to the optional ``url``.</doc>
+<status status="PASS" start="2025-09-30T08:01:49.375855" elapsed="2.062062"/>
+</kw>
+<kw name="Maximize Browser Window" owner="SeleniumLibrary">
+<doc>Maximizes current browser window.</doc>
+<status status="PASS" start="2025-09-30T08:01:51.438279" elapsed="0.031751"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2025-09-30T08:01:52.470829" level="INFO">Slept 1 second.</msg>
+<arg>1s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2025-09-30T08:01:51.470343" elapsed="1.000680"/>
+</kw>
+<status status="PASS" start="2025-09-30T08:01:49.374219" elapsed="3.096983"/>
+</kw>
+<kw name="Title Should Be" owner="SeleniumLibrary">
+<msg time="2025-09-30T08:01:52.481008" level="INFO">Page title is 'Example Domain'.</msg>
+<arg>Example Domain</arg>
+<doc>Verifies that the current page title equals ``title``.</doc>
+<status status="PASS" start="2025-09-30T08:01:52.471446" elapsed="0.009737"/>
+</kw>
+<kw name="Close Browse" type="TEARDOWN">
+<msg time="2025-09-30T08:01:52.483226" level="FAIL">No keyword with name 'Close Browse' found. Did you mean:
+    SeleniumLibrary.Close Browser</msg>
+<status status="FAIL" start="2025-09-30T08:01:52.483121" elapsed="0.000180">No keyword with name 'Close Browse' found. Did you mean:
+    SeleniumLibrary.Close Browser</status>
+</kw>
+<status status="FAIL" start="2025-09-30T08:01:49.373205" elapsed="3.110215">Teardown failed:
+No keyword with name 'Close Browse' found. Did you mean:
+    SeleniumLibrary.Close Browser</status>
+</test>
+<test id="s1-s1-s1-s1-t2" name="Verify Example Content" line="21">
+<kw name="Open Browser To Example" type="SETUP">
+<kw name="Chrome Options" owner="chromedriver_wrapper">
+<msg time="2025-09-30T08:01:52.486510" level="INFO">${options} = &lt;selenium.webdriver.chrome.options.Options object at 0x7eeb483c6b90&gt;</msg>
+<var>${options}</var>
+<doc>Return ChromeOptions with Docker-safe flags.</doc>
+<status status="PASS" start="2025-09-30T08:01:52.486254" elapsed="0.000310"/>
+</kw>
+<kw name="Open Browser" owner="SeleniumLibrary">
+<msg time="2025-09-30T08:01:52.487231" level="INFO">Opening browser 'chrome' to base url 'https://example.com'.</msg>
+<arg>${URL}</arg>
+<arg>chrome</arg>
+<arg>options=${options}</arg>
+<doc>Opens a new browser instance to the optional ``url``.</doc>
+<status status="PASS" start="2025-09-30T08:01:52.486806" elapsed="2.062794"/>
+</kw>
+<kw name="Maximize Browser Window" owner="SeleniumLibrary">
+<doc>Maximizes current browser window.</doc>
+<status status="PASS" start="2025-09-30T08:01:54.550976" elapsed="0.031293"/>
+</kw>
+<kw name="Sleep" owner="BuiltIn">
+<msg time="2025-09-30T08:01:55.583490" level="INFO">Slept 1 second.</msg>
+<arg>1s</arg>
+<doc>Pauses the test executed for the given time.</doc>
+<status status="PASS" start="2025-09-30T08:01:54.582777" elapsed="1.001040"/>
+</kw>
+<status status="PASS" start="2025-09-30T08:01:52.485851" elapsed="3.098179"/>
+</kw>
+<kw name="Element Should Be Visible" owner="SeleniumLibrary">
+<msg time="2025-09-30T08:01:55.620973" level="INFO">Element 'xpath://h1[contains(text(), 'Example Domain')]' is displayed.</msg>
+<arg>xpath://h1[contains(text(), 'Example Domain')]</arg>
+<doc>Verifies that the element identified by ``locator`` is visible.</doc>
+<status status="PASS" start="2025-09-30T08:01:55.584349" elapsed="0.036830"/>
+</kw>
+<kw name="Close Browser" owner="SeleniumLibrary" type="TEARDOWN">
+<doc>Closes the current browser.</doc>
+<status status="PASS" start="2025-09-30T08:01:55.621634" elapsed="1.063412"/>
+</kw>
+<status status="PASS" start="2025-09-30T08:01:52.485241" elapsed="4.200021"/>
+</test>
+<test id="s1-s1-s1-s1-t3" name="Log Example Domain" line="26">
+<kw name="Log To Console" owner="BuiltIn">
+<arg>Example Domain</arg>
+<doc>Logs the given message to the console.</doc>
+<status status="PASS" start="2025-09-30T08:01:56.686385" elapsed="0.000296"/>
+</kw>
+<status status="PASS" start="2025-09-30T08:01:56.685774" elapsed="0.001094"/>
+</test>
+<status status="FAIL" start="2025-09-30T08:01:49.194262" elapsed="7.493277"/>
+</suite>
+<status status="FAIL" start="2025-09-30T08:01:49.192689" elapsed="7.495679"/>
+</suite>
+<status status="FAIL" start="2025-09-30T08:01:49.191269" elapsed="7.497598"/>
+</suite>
+<status status="FAIL" start="2025-09-30T08:01:49.154908" elapsed="7.534383"/>
+</suite>
+<statistics>
+<total>
+<stat pass="2" fail="1" skip="0">All Tests</stat>
+</total>
+<tag>
+</tag>
+<suite>
+<stat name="2025-09-30T13-31-47" id="s1" pass="2" fail="1" skip="0">2025-09-30T13-31-47</stat>
+<stat name="Robot New Two" id="s1-s1" pass="2" fail="1" skip="0">2025-09-30T13-31-47.Robot New Two</stat>
+<stat name="Tests" id="s1-s1-s1" pass="2" fail="1" skip="0">2025-09-30T13-31-47.Robot New Two.Tests</stat>
+<stat name="Test Login" id="s1-s1-s1-s1" pass="2" fail="1" skip="0">2025-09-30T13-31-47.Robot New Two.Tests.Test Login</stat>
+</suite>
+</statistics>
+<errors>
+</errors>
+</robot>
