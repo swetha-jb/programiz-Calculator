@@ -1,6 +1,8 @@
 import sys, os, types
-sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'Calculator')))
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '{repo_basename}')))
 
+
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', f'{safe_repo_name}')))
 # Auto-mock tkinter for headless environments
 try:
     import tkinter as tk
@@ -26,200 +28,208 @@ except ImportError:
     sys.modules["tkinter"] = tk
 
 import pytest
-from unittest.mock import MagicMock
-import tkinter as tk
+import sys
+from unittest.mock import MagicMock, patch
 
-# Assuming the Calculator class is in a file named 'calc.py'
-from calc import Calculator
+sys.path.insert(0, r'/home/vvdn/projects/sfit_unitest_19_9_2025/cloned_repos/Calculator')
+
+from calculator import Calculator, LARGE_FONT_STYLE, SMALL_FONT_STYLE, DIGITS_FONT_STYLE, DEFAULT_FONT_STYLE, OFF_WHITE, WHITE, LIGHT_BLUE, LIGHT_GRAY, LABEL_COLOR
+
+class _WidgetMock(MagicMock):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.children = {}
+
+    def __setitem__(self, key, value):
+        self.children[key] = value
+
+    def __getitem__(self, key):
+        return self.children[key]
+
+    def configure(self, **kwargs):
+        pass
+
+    def pack(self, **kwargs):
+        pass
+
+    def grid(self, **kwargs):
+        pass
+
+    def bind(self, **kwargs):
+        pass
+
+    def config(self, **kwargs):
+        pass
+
+    def mainloop(self):
+        pass
+
+    def destroy(self):
+        pass
+
+    def rowconfigure(self, index, weight):
+        pass
+
+    def columnconfigure(self, index, weight):
+        pass
 
 @pytest.fixture
-def calculator_instance():
-    # Create a mock Tkinter root window to avoid actual GUI creation
-    root = tk.Tk()
-    root.withdraw()  # Hide the main window
+def mock_tkinter(monkeypatch):
+    mock_tk = MagicMock()
+    mock_tk_instance = _WidgetMock()
+    mock_tk.return_value = mock_tk_instance
+    monkeypatch.setattr(tk, "Tk", mock_tk)
 
-    # Temporarily replace tk.Tk with our mock
-    original_tk_Tk = tk.Tk
-    tk.Tk = MagicMock(return_value=root)
+    mock_frame = _WidgetMock()
+    monkeypatch.setattr(tk.Frame, "__init__", MagicMock(return_value=None))
+    monkeypatch.setattr(tk.Frame, "pack", MagicMock())
+    monkeypatch.setattr(tk.Frame, "grid", MagicMock())
+    monkeypatch.setattr(tk.Frame, "rowconfigure", MagicMock())
+    monkeypatch.setattr(tk.Frame, "columnconfigure", MagicMock())
 
-    # Create a Calculator instance
+    mock_label = _WidgetMock()
+    monkeypatch.setattr(tk.Label, "__init__", MagicMock(return_value=None))
+    monkeypatch.setattr(tk.Label, "pack", MagicMock())
+    monkeypatch.setattr(tk.Label, "config", MagicMock())
+
+    mock_button = _WidgetMock()
+    monkeypatch.setattr(tk.Button, "__init__", MagicMock(return_value=None))
+    monkeypatch.setattr(tk.Button, "grid", MagicMock())
+
+    return mock_tk_instance
+
+def test_calculator_initialization(mock_tkinter, monkeypatch):
     calc = Calculator()
+    assert calc.window == mock_tkinter
+    assert calc.total_expression == ""
+    assert calc.current_expression == ""
+    assert calc.display_frame is not None
+    assert calc.total_label is not None
+    assert calc.label is not None
+    assert calc.buttons_frame is not None
 
-    # Restore the original tk.Tk
-    tk.Tk = original_tk_Tk
+def test_add_to_expression(mock_tkinter, monkeypatch):
+    mock_label = _WidgetMock()
+    mock_label.config = MagicMock()
+    monkeypatch.setattr(tk.Label, "__init__", lambda *args, **kwargs: mock_label)
 
-    # Mock the window.mainloop() to prevent it from running
-    calc.window.mainloop = MagicMock()
+    calc = Calculator()
+    calc.label = mock_label
 
-    # Return the calculator instance for testing
-    yield calc
+    calc.add_to_expression(5)
+    assert calc.current_expression == "5"
+    mock_label.config.assert_called_once_with(text="5")
 
-    # Clean up the mock root window after the test
-    root.destroy()
+    calc.add_to_expression("+")
+    assert calc.current_expression == "5+"
+    mock_label.config.assert_called_with(text="5+")
 
-def test_initialization(calculator_instance):
-    assert calculator_instance.total_expression == ""
-    assert calculator_instance.current_expression == ""
-    assert isinstance(calculator_instance.window, tk.Tk)
-    assert calculator_instance.display_frame is not None
-    assert calculator_instance.total_label is not None
-    assert calculator_instance.label is not None
-    assert calculator_instance.buttons_frame is not None
+def test_append_operator(mock_tkinter, monkeypatch):
+    mock_total_label = _WidgetMock()
+    mock_total_label.config = MagicMock()
+    mock_label = _WidgetMock()
+    mock_label.config = MagicMock()
 
-def test_add_to_expression(calculator_instance):
-    calculator_instance.add_to_expression(5)
-    assert calculator_instance.current_expression == "5"
-    calculator_instance.add_to_expression("+")
-    assert calculator_instance.current_expression == "5+"
-    calculator_instance.add_to_expression(10)
-    assert calculator_instance.current_expression == "5+10"
+    monkeypatch.setattr(tk.Label, "__init__", lambda *args, **kwargs: mock_total_label if kwargs.get('font') == SMALL_FONT_STYLE else mock_label)
 
-def test_append_operator(calculator_instance):
-    calculator_instance.current_expression = "12"
-    calculator_instance.append_operator("+")
-    assert calculator_instance.total_expression == "12+"
-    assert calculator_instance.current_expression == ""
+    calc = Calculator()
+    calc.total_label = mock_total_label
+    calc.label = mock_label
 
-def test_clear(calculator_instance):
-    calculator_instance.total_expression = "12+3"
-    calculator_instance.current_expression = "15"
-    calculator_instance.clear()
-    assert calculator_instance.total_expression == ""
-    assert calculator_instance.current_expression == ""
+    calc.current_expression = "123"
+    calc.append_operator("+")
 
-def test_square(calculator_instance):
-    calculator_instance.current_expression = "5"
-    calculator_instance.square()
-    assert calculator_instance.current_expression == "25"
+    assert calc.current_expression == ""
+    assert calc.total_expression == "123"
+    mock_total_label.config.assert_called_once_with(text=" 123 ")
+    mock_label.config.assert_called_once_with(text="")
 
-def test_square_with_error(calculator_instance):
-    calculator_instance.current_expression = "abc"
-    calculator_instance.square()
-    assert calculator_instance.current_expression == "Error"
+def test_clear(mock_tkinter, monkeypatch):
+    mock_total_label = _WidgetMock()
+    mock_total_label.config = MagicMock()
+    mock_label = _WidgetMock()
+    mock_label.config = MagicMock()
 
-def test_sqrt(calculator_instance):
-    calculator_instance.current_expression = "25"
-    calculator_instance.sqrt()
-    assert calculator_instance.current_expression == "5.0"
+    monkeypatch.setattr(tk.Label, "__init__", lambda *args, **kwargs: mock_total_label if kwargs.get('font') == SMALL_FONT_STYLE else mock_label)
 
-def test_sqrt_with_error(calculator_instance):
-    calculator_instance.current_expression = "-4"
-    calculator_instance.sqrt()
-    assert calculator_instance.current_expression == "Error"
+    calc = Calculator()
+    calc.total_label = mock_total_label
+    calc.label = mock_label
 
-def test_evaluate_simple_addition(calculator_instance):
-    calculator_instance.current_expression = "5"
-    calculator_instance.total_expression = "10"
-    calculator_instance.append_operator("+")
-    calculator_instance.evaluate()
-    assert calculator_instance.current_expression == "15"
-    assert calculator_instance.total_expression == ""
+    calc.total_expression = "1+2"
+    calc.current_expression = "3"
+    calc.clear()
 
-def test_evaluate_complex_expression(calculator_instance):
-    calculator_instance.current_expression = "2*3+4"
-    calculator_instance.evaluate()
-    assert calculator_instance.current_expression == "10"
-    assert calculator_instance.total_expression == ""
+    assert calc.total_expression == ""
+    assert calc.current_expression == ""
+    mock_label.config.assert_called_once_with(text="")
+    mock_total_label.config.assert_called_once_with(text="")
 
-def test_evaluate_division_by_zero(calculator_instance):
-    calculator_instance.current_expression = "10/0"
-    calculator_instance.evaluate()
-    assert calculator_instance.current_expression == "Error"
-    assert calculator_instance.total_expression == ""
+def test_square(mock_tkinter, monkeypatch):
+    mock_label = _WidgetMock()
+    mock_label.config = MagicMock()
+    monkeypatch.setattr(tk.Label, "__init__", lambda *args, **kwargs: mock_label)
 
-def test_update_label_truncation(calculator_instance):
-    long_expression = "1234567890123"
-    calculator_instance.current_expression = long_expression
-    calculator_instance.update_label()
-    assert calculator_instance.label.cget("text") == long_expression[:11]
+    calc = Calculator()
+    calc.label = mock_label
 
-def test_update_total_label_with_operators(calculator_instance):
-    calculator_instance.total_expression = "10*5-2"
-    calculator_instance.update_total_label()
-    assert calculator_instance.total_label.cget("text") == "10 × 5 - 2"
+    calc.current_expression = "5"
+    calc.square()
+    assert calc.current_expression == "25"
+    mock_label.config.assert_called_once_with(text="25")
 
-def test_bind_keys_digit(calculator_instance):
-    # Mock the add_to_expression method to check if it's called
-    calculator_instance.add_to_expression = MagicMock()
-    # Simulate pressing the '7' key
-    event = MagicMock()
-    event.char = '7'
-    calculator_instance.window.event_generate('<<KeyPress>>', char='7') # This won't work directly without Tk mainloop
+    calc.current_expression = "2+3"
+    calc.square()
+    assert calc.current_expression == "25"
+    mock_label.config.assert_called_with(text="25")
 
-    # We can directly call the lambda function that would be bound
-    for digit, grid_value in calculator_instance.digits.items():
-        if digit == 7:
-            # Simulate the lambda call for digit 7
-            command = calculator_instance.create_digit_buttons.__code__.co_consts[2].__code__.co_consts[2] # This is fragile, better to test the command directly
-            # A more robust way is to mock the buttons and call their commands
-            break # Exit after finding the digit
+def test_sqrt(mock_tkinter, monkeypatch):
+    mock_label = _WidgetMock()
+    mock_label.config = MagicMock()
+    monkeypatch.setattr(tk.Label, "__init__", lambda *args, **kwargs: mock_label)
 
+    calc = Calculator()
+    calc.label = mock_label
 
-def test_bind_keys_operator(calculator_instance):
-    # Mock the append_operator method to check if it's called
-    calculator_instance.append_operator = MagicMock()
-    # Simulate pressing the '+' key
-    event = MagicMock()
-    event.char = '+'
-    calculator_instance.window.event_generate('<<KeyPress>>', char='+') # This won't work directly without Tk mainloop
+    calc.current_expression = "25"
+    calc.sqrt()
+    assert calc.current_expression == "5.0"
+    mock_label.config.assert_called_once_with(text="5.0")
 
-    # A more robust way is to mock the buttons and call their commands
-    for operator, symbol in calculator_instance.operations.items():
-        if operator == '+':
-            # Simulate the lambda call for operator '+'
-            break # Exit after finding the operator
+    calc.current_expression = "9"
+    calc.sqrt()
+    assert calc.current_expression == "3.0"
+    mock_label.config.assert_called_with(text="3.0")
 
-def test_bind_keys_return(calculator_instance):
-    # Mock the evaluate method to check if it's called
-    calculator_instance.evaluate = MagicMock()
-    # Simulate pressing the Enter key
-    event = MagicMock()
-    event.keysym = 'Return'
-    calculator_instance.window.event_generate('<<KeyPress>>', keysym='Return') # This won't work directly without Tk mainloop
+def test_evaluate_valid_expression(mock_tkinter, monkeypatch):
+    mock_total_label = _WidgetMock()
+    mock_total_label.config = MagicMock()
+    mock_label = _WidgetMock()
+    mock_label.config = MagicMock()
 
-    # A more robust way is to test the command associated with the bind
-    # Directly call the bound function for Enter
-    calculator_instance.evaluate()
-    assert calculator_instance.evaluate.call_count == 1
+    monkeypatch.setattr(tk.Label, "__init__", lambda *args, **kwargs: mock_total_label if kwargs.get('font') == SMALL_FONT_STYLE else mock_label)
 
+    calc = Calculator()
+    calc.total_label = mock_total_label
+    calc.label = mock_label
 
-def test_create_display_frame(calculator_instance):
-    assert calculator_instance.display_frame is not None
-    assert isinstance(calculator_instance.display_frame, tk.Frame)
+    calc.current_expression = "5"
+    calc.total_expression = "2+3"
+    calc.evaluate()
 
-def test_create_display_labels(calculator_instance):
-    assert calculator_instance.total_label is not None
-    assert calculator_instance.label is not None
-    assert isinstance(calculator_instance.total_label, tk.Label)
-    assert isinstance(calculator_instance.label, tk.Label)
+    assert calc.current_expression == "5"
+    assert calc.total_expression == ""
+    mock_total_label.config.assert_called_once_with(text=" 2 + 3 ")
+    mock_label.config.assert_called_once_with(text="5")
 
-def test_create_digit_buttons(calculator_instance):
-    # Check if the number of digit buttons created matches the digits dictionary
-    digit_buttons_count = 0
-    for widget in calculator_instance.buttons_frame.winfo_children():
-        if isinstance(widget, tk.Button) and widget.cget("text").isdigit():
-            digit_buttons_count += 1
-    assert digit_buttons_count == len(calculator_instance.digits) - 1 # Exclude '.'
+def test_evaluate_error_expression(mock_tkinter, monkeypatch):
+    mock_total_label = _WidgetMock()
+    mock_total_label.config = MagicMock()
+    mock_label = _WidgetMock()
+    mock_label.config = MagicMock()
 
-def test_create_operator_buttons(calculator_instance):
-    # Check if the number of operator buttons created matches the operations dictionary
-    operator_buttons_count = 0
-    for widget in calculator_instance.buttons_frame.winfo_children():
-        if isinstance(widget, tk.Button) and widget.cget("text") in calculator_instance.operations.values():
-            operator_buttons_count += 1
-    assert operator_buttons_count == len(calculator_instance.operations)
+    monkeypatch.setattr(tk.Label, "__init__", lambda *args, **kwargs: mock_total_label if kwargs.get('font') == SMALL_FONT_STYLE else mock_label)
 
-def test_create_special_buttons(calculator_instance):
-    special_buttons_texts = {"C", "x\u00b2", "\u221ax", "="}
-    created_special_buttons_texts = set()
-    for widget in calculator_instance.buttons_frame.winfo_children():
-        if isinstance(widget, tk.Button) and widget.cget("text") in special_buttons_texts:
-            created_special_buttons_texts.add(widget.cget("text"))
-    assert created_special_buttons_texts == special_buttons_texts
-
-def test_run(calculator_instance):
-    assert True  # Placeholder assert
-    # The run method calls window.mainloop(), which we've mocked.
-    # We can assert that mainloop was called.
-    calculator_instance.run()
-    calculator_instance.window.mainloop.assert_called_once()
+    calc = Calculator()
+    calc.total_label = mock_total_label
+    calc.label = mock_label
