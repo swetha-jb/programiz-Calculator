@@ -1,1 +1,33 @@
-{"available_files":[{"filename":"test_py-tic-tac-toe_cases.py","absolute_path":"/home/vvdn/projects/sfit_unittest/generated_tests/test_py-tic-tac-toe_cases.py","size_bytes":8646,"modified_timestamp":1758265348.0724926,"file_url":"/download-test-cases/?filename=test_py-tic-tac-toe_cases.py","session_id":"02343fec-bc89-4712-b225-1687cf602dc8","repo_url":"","test_type":"unit","session_url":"/download-test-cases/?session_id=02343fec-bc89-4712-b225-1687cf602dc8"},{"filename":"test_Face_recognition_based_attendance_system_cases.py","absolute_path":"/home/vvdn/projects/sfit_unittest/generated_tests/test_Face_recognition_based_attendance_system_cases.py","size_bytes":37094,"modified_timestamp":1756188750.4208052,"file_url":"/download-test-cases/?filename=test_Face_recognition_based_attendance_system_cases.py"},{"filename":"test_Calculator_cases.py","absolute_path":"/home/vvdn/projects/sfit_unittest/generated_tests/test_Calculator_cases.py","size_bytes":9587,"modified_timestamp":1758861522.4079363,"file_url":"/download-test-cases/?filename=test_Calculator_cases.py","session_id":"24001a92-45ce-4d33-adc3-028afabc5d85","repo_url":"","test_type":"unit","session_url":"/download-test-cases/?session_id=24001a92-45ce-4d33-adc3-028afabc5d85"},{"filename":"test_Pytest-Framework_cases.py","absolute_path":"/home/vvdn/projects/sfit_unittest/generated_tests/test_Pytest-Framework_cases.py","size_bytes":2787,"modified_timestamp":1758698874.2172627,"file_url":"/download-test-cases/?filename=test_Pytest-Framework_cases.py","session_id":"3e1ea701-7a8f-4af2-8185-4e4f4919bb31","repo_url":"","test_type":"unit","session_url":"/download-test-cases/?session_id=3e1ea701-7a8f-4af2-8185-4e4f4919bb31"},{"filename":"test_calculator_cases.py","absolute_path":"/home/vvdn/projects/sfit_unittest/generated_tests/test_calculator_cases.py","size_bytes":7833,"modified_timestamp":1758176899.4213164,"file_url":"/download-test-cases/?filename=test_calculator_cases.py","session_id":"2861e651-2910-4b0a-b880-5f00ccaff58a","repo_url":"","test_type":"unit","session_url":"/download-test-cases/?session_id=2861e651-2910-4b0a-b880-5f00ccaff58a"},{"filename":"test_CalCulator_cases.py","absolute_path":"/home/vvdn/projects/sfit_unittest/generated_tests/test_CalCulator_cases.py","size_bytes":22940,"modified_timestamp":1758783153.0966015,"file_url":"/download-test-cases/?filename=test_CalCulator_cases.py","session_id":"f28b366e-e106-4c8b-9580-f2b9e42e9727","repo_url":"","test_type":"unit","session_url":"/download-test-cases/?session_id=f28b366e-e106-4c8b-9580-f2b9e42e9727"}]}
+import sys, os, types
+sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '{repo_basename}')))
+
+
+# sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', f'{safe_repo_name}')))
+# Auto-mock tkinter for headless environments
+try:
+    import tkinter as tk
+except ImportError:
+    import sys, types
+    class _WidgetMock:
+        def __init__(self, *a, **k): self._text = ""
+        def config(self, **kwargs): 
+            if "text" in kwargs: self._text = kwargs["text"]
+        def cget(self, key): return self._text if key == "text" else None
+        def get(self): return self._text
+        def grid(self, *a, **k): return []
+        def pack(self, *a, **k): return []
+        def place(self, *a, **k): return []
+        def destroy(self): return None
+        def __getattr__(self, item): return lambda *a, **k: None
+    tk = types.ModuleType("tkinter")
+    for widget in ["Tk","Label","Button","Entry","Frame","Canvas","Text","Scrollbar","Checkbutton",
+                "Radiobutton","Spinbox","Menu","Toplevel","Listbox"]:
+        setattr(tk, widget, _WidgetMock)
+    for const in ["N","S","E","W","NE","NW","SE","SW","CENTER","NS","EW","NSEW"]:
+        setattr(tk, const, const)
+    sys.modules["tkinter"] = tk
+
+import pytest
+
+def test_placeholder():
+    assert True
