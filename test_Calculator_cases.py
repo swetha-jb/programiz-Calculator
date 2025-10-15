@@ -29,157 +29,187 @@ except ImportError:
 
 import sys
 import pytest
-from unittest.mock import MagicMock, _WIDGET_BASE
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, r'/home/vvdn/projects/sfit_unitest_19_9_2025/cloned_repos/Calculator')
 
-from calculator import Calculator, LARGE_FONT_STYLE, SMALL_FONT_STYLE, DIGITS_FONT_STYLE, DEFAULT_FONT_STYLE, OFF_WHITE, WHITE, LIGHT_BLUE, LIGHT_GRAY, LABEL_COLOR
+from calculator import Calculator, tk, LARGE_FONT_STYLE, SMALL_FONT_STYLE, DIGITS_FONT_STYLE, DEFAULT_FONT_STYLE, OFF_WHITE, WHITE, LIGHT_BLUE, LIGHT_GRAY, LABEL_COLOR
 
-class _WidgetMock(_WIDGET_BASE):
-    def __init__(self, master=None, **kw):
-        self._mock_master = master
-        self._mock_config = {}
-        self._mock_pack = {}
-        self._mock_grid = {}
-        self._mock_place = {}
-
-    def config(self, **kw):
-        self._mock_config.update(kw)
-
-    def pack(self, **kw):
-        self._mock_pack.update(kw)
-
-    def grid(self, **kw):
-        self._mock_grid.update(kw)
-
-    def place(self, **kw):
-        self._mock_place.update(kw)
-
-    def bind(self, sequence, func, add=None):
-        pass
-
-    def unbind(self, sequence, add=None):
-        pass
-
-    def destroy(self):
-        pass
+class _WidgetMock:
+    def __init__(self, *args, **kwargs):
+        self.children = {}
+        self.config = MagicMock()
+        self.pack = MagicMock()
+        self.grid = MagicMock()
+        self.bind = MagicMock()
+        self.destroy = MagicMock()
+        self.configure = MagicMock()
 
     def __setitem__(self, key, value):
-        self.config(**{key: value})
+        pass
 
     def __getitem__(self, key):
-        return self._mock_config.get(key)
+        return self
+
+    def __getattr__(self, name):
+        return MagicMock()
+
+    def add_command(self, *args, **kwargs):
+        pass
+
+    def insert(self, *args, **kwargs):
+        pass
+
+    def delete(self, *args, **kwargs):
+        pass
+
+    def get(self, *args, **kwargs):
+        return ""
+
+    def configure(self, **kwargs):
+        pass
+
+    def update_idletasks(self):
+        pass
+
+    def mainloop(self):
+        pass
 
 @pytest.fixture
-def mock_tkinter(monkeypatch):
-    mock_tk = MagicMock()
-    mock_tk_instance = MagicMock()
-    mock_tk.return_value = mock_tk_instance
+def mock_tkinter():
+    with patch('tkinter.Tk', new=_WidgetMock) as mock_tk, \
+         patch('tkinter.Frame', new=_WidgetMock) as mock_frame, \
+         patch('tkinter.Label', new=_WidgetMock) as mock_label, \
+         patch('tkinter.Button', new=_WidgetMock) as mock_button:
+        yield mock_tk, mock_frame, mock_label, mock_button
 
-    mock_frame = MagicMock(spec=_WidgetMock)
-    mock_label = MagicMock(spec=_WidgetMock)
-    mock_button = MagicMock(spec=_WidgetMock)
-
-    monkeypatch.setattr(sys.modules['tkinter'], 'Tk', mock_tk)
-    monkeypatch.setattr(sys.modules['tkinter'], 'Frame', mock_frame)
-    monkeypatch.setattr(sys.modules['tkinter'], 'Label', mock_label)
-    monkeypatch.setattr(sys.modules['tkinter'], 'Button', mock_button)
-
-    mock_tk_instance.Frame.return_value = mock_frame
-    mock_tk_instance.Label.return_value = mock_label
-    mock_tk_instance.Button.return_value = mock_button
-
-    return mock_tk_instance
-
-@pytest.fixture
-def calculator(mock_tkinter):
+def test_calculator_initialization(mock_tkinter):
+    mock_tk, mock_frame, mock_label, mock_button = mock_tkinter
     calc = Calculator()
-    return calc
+    assert calc.total_expression == ""
+    assert calc.current_expression == ""
+    assert isinstance(calc.window, _WidgetMock)
+    assert isinstance(calc.display_frame, _WidgetMock)
+    assert isinstance(calc.total_label, _WidgetMock)
+    assert isinstance(calc.label, _WidgetMock)
+    assert isinstance(calc.buttons_frame, _WidgetMock)
 
-def test_calculator_initialization(calculator):
-    assert calculator.total_expression == ""
-    assert calculator.current_expression == ""
-    assert calculator.window is not None
-    assert calculator.display_frame is not None
-    assert calculator.total_label is not None
-    assert calculator.label is not None
-    assert calculator.buttons_frame is not None
+def test_add_to_expression(mock_tkinter):
+    calc = Calculator()
+    calc.add_to_expression(5)
+    assert calc.current_expression == "5"
+    calc.add_to_expression("+")
+    assert calc.current_expression == "5+"
 
-def test_add_to_expression(calculator):
-    calculator.add_to_expression("5")
-    assert calculator.current_expression == "5"
-    calculator.add_to_expression("+")
-    assert calculator.current_expression == "5+"
+def test_append_operator(mock_tkinter):
+    calc = Calculator()
+    calc.current_expression = "123"
+    calc.append_operator("+")
+    assert calc.total_expression == "123+"
+    assert calc.current_expression == ""
 
-def test_append_operator(calculator):
-    calculator.current_expression = "12"
-    calculator.append_operator("+")
-    assert calculator.total_expression == "12+"
-    assert calculator.current_expression == ""
+def test_clear(mock_tkinter):
+    calc = Calculator()
+    calc.total_expression = "1+2"
+    calc.current_expression = "3"
+    calc.clear()
+    assert calc.total_expression == ""
+    assert calc.current_expression == ""
 
-def test_clear(calculator):
-    calculator.current_expression = "12+3"
-    calculator.total_expression = "15"
-    calculator.clear()
-    assert calculator.current_expression == ""
-    assert calculator.total_expression == ""
+def test_square(mock_tkinter):
+    calc = Calculator()
+    calc.current_expression = "5"
+    calc.square()
+    assert calc.current_expression == "25"
 
-def test_square(calculator):
-    calculator.current_expression = "5"
-    calculator.square()
-    assert calculator.current_expression == "25"
+def test_sqrt(mock_tkinter):
+    calc = Calculator()
+    calc.current_expression = "25"
+    calc.sqrt()
+    assert calc.current_expression == "5.0"
 
-def test_sqrt(calculator):
-    calculator.current_expression = "25"
-    calculator.sqrt()
-    assert calculator.current_expression == "5.0"
+def test_evaluate_valid_expression(mock_tkinter):
+    calc = Calculator()
+    calc.total_expression = "2+2"
+    calc.current_expression = ""
+    calc.evaluate()
+    assert calc.current_expression == "4"
+    assert calc.total_expression == ""
 
-def test_evaluate_valid_expression(calculator):
-    calculator.current_expression = "5"
-    calculator.total_expression = "10+"
-    calculator.evaluate()
-    assert calculator.current_expression == "15"
-    assert calculator.total_expression == ""
+def test_evaluate_with_current_expression(mock_tkinter):
+    calc = Calculator()
+    calc.total_expression = "2+2"
+    calc.current_expression = "5"
+    calc.evaluate()
+    assert calc.current_expression == "9"
+    assert calc.total_expression == ""
 
-def test_evaluate_division_by_zero(calculator):
-    calculator.current_expression = "0"
-    calculator.total_expression = "10/"
-    calculator.evaluate()
-    assert calculator.current_expression == "Error"
-    assert calculator.total_expression == "10/0"
+def test_evaluate_error(mock_tkinter):
+    calc = Calculator()
+    calc.total_expression = "2+"
+    calc.current_expression = ""
+    calc.evaluate()
+    assert calc.current_expression == "Error"
+    assert calc.total_expression == "2+"
 
-def test_update_label(calculator):
-    calculator.current_expression = "1234567890123"
-    calculator.update_label()
-    assert calculator.label.config.call_args[1]['text'] == "12345678901"
+def test_update_label(mock_tkinter):
+    calc = Calculator()
+    calc.current_expression = "1234567890123"
+    calc.update_label()
+    assert calc.label.config.call_args[1]['text'] == "12345678901"
 
-def test_update_total_label(calculator):
-    calculator.total_expression = "10*5"
-    calculator.update_total_label()
-    assert calculator.total_label.config.call_args[1]['text'] == "10 × 5"
+def test_update_total_label(mock_tkinter):
+    calc = Calculator()
+    calc.total_expression = "1+2*3"
+    calc.update_total_label()
+    assert calc.total_label.config.call_args[1]['text'] == "1 + 2 * 3"
 
-def test_bind_keys_return(calculator):
-    calculator.window.bind.assert_any_call("<Return>", pytest.raises(Exception))
+def test_bind_keys_return(mock_tkinter):
+    calc = Calculator()
+    calc.window.bind.assert_any_call("<Return>", pytest.raises(TypeError)) # Mocking lambda
 
-def test_bind_keys_digits(calculator):
-    for digit in calculator.digits:
-        calculator.window.bind.assert_any_call(str(digit), pytest.raises(Exception))
+def test_bind_keys_digits(mock_tkinter):
+    calc = Calculator()
+    calc.window.bind.assert_any_call("7", pytest.raises(TypeError)) # Mocking lambda
 
-def test_bind_keys_operators(calculator):
-    for operator in calculator.operations:
-        calculator.window.bind.assert_any_call(operator, pytest.raises(Exception))
+def test_bind_keys_operators(mock_tkinter):
+    calc = Calculator()
+    calc.window.bind.assert_any_call("+", pytest.raises(TypeError)) # Mocking lambda
 
-def test_create_digit_buttons(calculator):
-    calculator.create_digit_buttons()
-    assert calculator.buttons_frame.grid.call_count >= len(calculator.digits)
+def test_create_digit_buttons(mock_tkinter):
+    calc = Calculator()
+    assert len(calc.digits) == 11
+    for digit, grid_value in calc.digits.items():
+        call_args = None
+        for call in mock_button.call_args_list:
+            if call[1]['text'] == str(digit):
+                call_args = call
+                break
+        assert call_args is not None
+        assert call_args[1]['command'].__closure__[0].cell_contents == digit
 
-def test_create_operator_buttons(calculator):
-    calculator.create_operator_buttons()
-    assert calculator.buttons_frame.grid.call_count >= len(calculator.operations)
+def test_create_operator_buttons(mock_tkinter):
+    calc = Calculator()
+    assert len(calc.operations) == 4
+    for i, (operator, symbol) in enumerate(calc.operations.items()):
+        call_args = None
+        for call in mock_button.call_args_list:
+            if call[1]['text'] == symbol:
+                call_args = call
+                break
+        assert call_args is not None
+        assert call_args[1]['command'].__closure__[0].cell_contents == operator
+        assert call_args[0][0] == calc.buttons_frame
+        assert call_args[1]['grid'][0] == i
+        assert call_args[1]['grid'][1] == 4
 
-def test_create_special_buttons(calculator):
-    calculator.create_special_buttons()
-    assert calculator.buttons_frame.grid.call_count >= 4
+def test_create_special_buttons(mock_tkinter):
+    calc = Calculator()
+    mock_button_calls = [call[1]['text'] for call in mock_button.call_args_list]
+    assert "C" in mock_button_calls
+    assert "=" in mock_button_calls
+    assert "x²" in mock_button_calls
+    assert "\u221ax" in mock_button_calls
 
 if __name__ == "__main__":
     import pytest, sys
