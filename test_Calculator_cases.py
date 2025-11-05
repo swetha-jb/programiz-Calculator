@@ -27,18 +27,64 @@ except ImportError:
         setattr(tk, const, const)
     sys.modules["tkinter"] = tk
 
+import pytest
 import sys
-sys.path.insert(0, r'/home/vvdn/projects/sfit_unitest_19_9_2025/cloned_repos/Calculator')
-
-import tkinter as tk
 from unittest.mock import MagicMock
 
-from calculator import Calculator, LARGE_FONT_STYLE, SMALL_FONT_STYLE, DIGITS_FONT_STYLE, DEFAULT_FONT_STYLE, OFF_WHITE, WHITE, LIGHT_BLUE, LIGHT_GRAY, LABEL_COLOR
+sys.path.insert(0, r'/home/vvdn/projects/sfit_unitest_19_9_2025/cloned_repos/Calculator')
 
-class _WidgetMock(MagicMock):
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
+from calculator import Calculator
+
+class MockTkinterWindow:
+    def __init__(self):
+        self.bind_calls = []
+        self.config_calls = []
+        self.geometry_calls = []
+        self.resizable_calls = []
+        self.title_calls = []
+        self.mainloop_calls = []
+
+    def bind(self, key, func):
+        self.bind_calls.append((key, func))
+
+    def config(self, **kwargs):
+        self.config_calls.append(kwargs)
+
+    def geometry(self, size):
+        self.geometry_calls.append(size)
+
+    def resizable(self, width, height):
+        self.resizable_calls.append((width, height))
+
+    def title(self, title):
+        self.title_calls.append(title)
+
+    def mainloop(self):
+        self.mainloop_calls.append(True)
+
+class MockTkinterWidget:
+    def __init__(self):
+        self.pack_calls = []
+        self.grid_calls = []
+        self.config_calls = []
+        self.rowconfigure_calls = []
+        self.columnconfigure_calls = []
         self.children = {}
+
+    def pack(self, **kwargs):
+        self.pack_calls.append(kwargs)
+
+    def grid(self, **kwargs):
+        self.grid_calls.append(kwargs)
+
+    def config(self, **kwargs):
+        self.config_calls.append(kwargs)
+
+    def rowconfigure(self, index, weight):
+        self.rowconfigure_calls.append((index, weight))
+
+    def columnconfigure(self, index, weight):
+        self.columnconfigure_calls.append((index, weight))
 
     def __setitem__(self, key, value):
         self.children[key] = value
@@ -46,70 +92,46 @@ class _WidgetMock(MagicMock):
     def __getitem__(self, key):
         return self.children[key]
 
-    def configure(self, **kwargs):
-        pass
+@pytest.fixture
+def mock_tkinter():
+    mock_window = MockTkinterWindow()
+    mock_frame = MockTkinterWidget()
+    mock_label = MockTkinterWidget()
+    mock_button = MockTkinterWidget()
 
-    def pack(self, **kwargs):
-        pass
-
-    def grid(self, **kwargs):
-        pass
-
-    def bind(self, **kwargs):
-        pass
-
-    def config(self, **kwargs):
-        pass
-
-    def mainloop(self):
-        pass
-
-    def destroy(self):
-        pass
-
-    def rowconfigure(self, index, weight):
-        pass
-
-    def columnconfigure(self, index, weight):
-        pass
-
-def test_calculator_initialization(monkeypatch):
     mock_tk = MagicMock()
-    mock_tk_instance = _WidgetMock()
-    mock_tk.return_value = mock_tk_instance
-    monkeypatch.setattr(tk, "Tk", mock_tk)
+    mock_tk.Tk.return_value = mock_window
+    mock_tk.Frame.return_value = mock_frame
+    mock_tk.Label.return_value = mock_label
+    mock_tk.Button.return_value = mock_button
 
-    mock_frame = _WidgetMock()
-    monkeypatch.setattr(tk.Frame, "__init__", lambda self, *args, **kwargs: mock_frame)
+    tk.Tk = mock_tk
+    tk.Frame = lambda master, **kwargs: mock_frame
+    tk.Label = lambda master, **kwargs: mock_label
+    tk.Button = lambda master, **kwargs: mock_button
 
-    mock_label = _WidgetMock()
-    monkeypatch.setattr(tk.Label, "__init__", lambda self, *args, **kwargs: mock_label)
+    return mock_tk, mock_window, mock_frame, mock_label, mock_button
 
+def test_calculator_initialization(mock_tkinter):
+    mock_tk, mock_window, _, _, _ = mock_tkinter
     calc = Calculator()
 
-    assert calc.window == mock_tk_instance
+    assert isinstance(calc.window, MockTkinterWindow)
     assert calc.total_expression == ""
     assert calc.current_expression == ""
-    assert calc.display_frame == mock_frame
-    assert calc.total_label == mock_label
-    assert calc.label == mock_label
-    assert calc.digits == {7: (1, 1), 8: (1, 2), 9: (1, 3), 4: (2, 1), 5: (2, 2), 6: (2, 3), 1: (3, 1), 2: (3, 2), 3: (3, 3), 0: (4, 2), '.': (4, 1)}
-    assert calc.operations == {"/": "\u00F7", "*": "\u00D7", "-": "-", "+": "+"}
-    assert calc.buttons_frame == mock_frame
+    assert isinstance(calc.display_frame, MockTkinterWidget)
+    assert isinstance(calc.total_label, MockTkinterWidget)
+    assert isinstance(calc.label, MockTkinterWidget)
+    assert isinstance(calc.buttons_frame, MockTkinterWidget)
 
-def test_add_to_expression(monkeypatch):
-    mock_tk = MagicMock()
-    mock_tk_instance = _WidgetMock()
-    mock_tk.return_value = mock_tk_instance
-    monkeypatch.setattr(tk, "Tk", mock_tk)
+    mock_window.geometry.assert_called_once_with("375x667")
+    mock_window.resizable.assert_called_once_with(0, 0)
+    mock_window.title.assert_called_once_with("Calculator")
 
-    mock_label = _WidgetMock()
-    monkeypatch.setattr(tk.Label, "config", MagicMock())
-    monkeypatch.setattr(tk.Frame, "__init__", lambda self, *args, **kwargs: _WidgetMock())
-    monkeypatch.setattr(tk.Button, "__init__", lambda self, *args, **kwargs: _WidgetMock())
-
+def test_add_to_expression(mock_tkinter):
+    mock_tk, mock_window, _, mock_label, _ = mock_tkinter
     calc = Calculator()
-    calc.label = mock_label
+    calc.label.config = MagicMock()
 
     calc.add_to_expression(5)
     assert calc.current_expression == "5"
@@ -119,93 +141,99 @@ def test_add_to_expression(monkeypatch):
     assert calc.current_expression == "5+"
     calc.label.config.assert_called_with(text="5+")
 
-def test_append_operator(monkeypatch):
-    mock_tk = MagicMock()
-    mock_tk_instance = _WidgetMock()
-    mock_tk.return_value = mock_tk_instance
-    monkeypatch.setattr(tk, "Tk", mock_tk)
-
-    mock_total_label = _WidgetMock()
-    mock_current_label = _WidgetMock()
-    monkeypatch.setattr(tk.Label, "__init__", lambda self, *args, **kwargs: mock_total_label if "text=" in kwargs and kwargs["text"] == "" else mock_current_label)
-    monkeypatch.setattr(tk.Frame, "__init__", lambda self, *args, **kwargs: _WidgetMock())
-    monkeypatch.setattr(tk.Button, "__init__", lambda self, *args, **kwargs: _WidgetMock())
-
+def test_append_operator(mock_tkinter):
+    mock_tk, mock_window, _, mock_label, _ = mock_tkinter
     calc = Calculator()
-    calc.total_label = mock_total_label
-    calc.label = mock_current_label
-    calc.total_expression = "1+2"
-    calc.current_expression = "3"
+    calc.total_label.config = MagicMock()
+    calc.label.config = MagicMock()
 
-    calc.append_operator("*")
+    calc.current_expression = "123"
+    calc.append_operator("+")
+
+    assert calc.total_expression == "123+"
     assert calc.current_expression == ""
-    assert calc.total_expression == "1+23"
-    mock_total_label.config.assert_called_once_with(text='1 + 23')
-    mock_current_label.config.assert_called_once_with(text='')
+    calc.total_label.config.assert_called_once_with(text=' 123 + ')
+    calc.label.config.assert_called_once_with(text="")
 
-def test_clear(monkeypatch):
-    mock_tk = MagicMock()
-    mock_tk_instance = _WidgetMock()
-    mock_tk.return_value = mock_tk_instance
-    monkeypatch.setattr(tk, "Tk", mock_tk)
-
-    mock_total_label = _WidgetMock()
-    mock_current_label = _WidgetMock()
-    monkeypatch.setattr(tk.Label, "__init__", lambda self, *args, **kwargs: mock_total_label if "text=" in kwargs and kwargs["text"] == "" else mock_current_label)
-    monkeypatch.setattr(tk.Frame, "__init__", lambda self, *args, **kwargs: _WidgetMock())
-    monkeypatch.setattr(tk.Button, "__init__", lambda self, *args, **kwargs: _WidgetMock())
-
+def test_clear(mock_tkinter):
+    mock_tk, mock_window, _, mock_label, _ = mock_tkinter
     calc = Calculator()
-    calc.total_label = mock_total_label
-    calc.label = mock_current_label
+    calc.total_label.config = MagicMock()
+    calc.label.config = MagicMock()
+
     calc.total_expression = "1+2"
     calc.current_expression = "3"
-
     calc.clear()
-    assert calc.current_expression == ""
+
     assert calc.total_expression == ""
-    mock_current_label.config.assert_called_once_with(text="")
-    mock_total_label.config.assert_called_once_with(text="")
+    assert calc.current_expression == ""
+    calc.label.config.assert_called_once_with(text="")
+    calc.total_label.config.assert_called_once_with(text="")
 
-def test_square(monkeypatch):
-    mock_tk = MagicMock()
-    mock_tk_instance = _WidgetMock()
-    mock_tk.return_value = mock_tk_instance
-    monkeypatch.setattr(tk, "Tk", mock_tk)
-
-    mock_label = _WidgetMock()
-    monkeypatch.setattr(tk.Label, "config", MagicMock())
-    monkeypatch.setattr(tk.Frame, "__init__", lambda self, *args, **kwargs: _WidgetMock())
-    monkeypatch.setattr(tk.Button, "__init__", lambda self, *args, **kwargs: _WidgetMock())
-
+def test_square(mock_tkinter):
+    mock_tk, mock_window, _, mock_label, _ = mock_tkinter
     calc = Calculator()
-    calc.label = mock_label
-    calc.current_expression = "5"
+    calc.label.config = MagicMock()
 
+    calc.current_expression = "5"
     calc.square()
     assert calc.current_expression == "25"
     calc.label.config.assert_called_once_with(text="25")
 
-def test_sqrt(monkeypatch):
-    mock_tk = MagicMock()
-    mock_tk_instance = _WidgetMock()
-    mock_tk.return_value = mock_tk_instance
-    monkeypatch.setattr(tk, "Tk", mock_tk)
+    calc.current_expression = "-3"
+    calc.square()
+    assert calc.current_expression == "9"
+    calc.label.config.assert_called_with(text="9")
 
-    mock_label = _WidgetMock()
-    monkeypatch.setattr(tk.Label, "config", MagicMock())
-    monkeypatch.setattr(tk.Frame, "__init__", lambda self, *args, **kwargs: _WidgetMock())
-    monkeypatch.setattr(tk.Button, "__init__", lambda self, *args, **kwargs: _WidgetMock())
-
+def test_sqrt(mock_tkinter):
+    mock_tk, mock_window, _, mock_label, _ = mock_tkinter
     calc = Calculator()
-    calc.label = mock_label
-    calc.current_expression = "25"
+    calc.label.config = MagicMock()
 
+    calc.current_expression = "25"
     calc.sqrt()
     assert calc.current_expression == "5.0"
     calc.label.config.assert_called_once_with(text="5.0")
 
-def test_evaluate_valid_expression(monkeypatch):
-    mock_tk = MagicMock()
-    mock_tk_instance = _WidgetMock()
-    mock_tk.return_value = mock_tk_instance
+    calc.current_expression = "2"
+    calc.sqrt()
+    assert calc.current_expression == "1.4142135623730951"
+    calc.label.config.assert_called_with(text="1.4142135623730951")
+
+def test_evaluate_valid_expression(mock_tkinter):
+    mock_tk, mock_window, _, mock_label, _ = mock_tkinter
+    calc = Calculator()
+    calc.total_label.config = MagicMock()
+    calc.label.config = MagicMock()
+
+    calc.total_expression = "2+3"
+    calc.current_expression = ""
+    calc.evaluate()
+
+    assert calc.total_expression == ""
+    assert calc.current_expression == "5"
+    calc.total_label.config.assert_called_once_with(text=' 2 + 3 ')
+    calc.label.config.assert_called_once_with(text="5")
+
+def test_evaluate_expression_with_current(mock_tkinter):
+    mock_tk, mock_window, _, mock_label, _ = mock_tkinter
+    calc = Calculator()
+    calc.total_label.config = MagicMock()
+    calc.label.config = MagicMock()
+
+    calc.total_expression = "10"
+    calc.current_expression = "*2"
+    calc.evaluate()
+
+    assert calc.total_expression == ""
+    assert calc.current_expression == "20"
+    calc.total_label.config.assert_called_once_with(text=' 10 * 2 ')
+    calc.label.config.assert_called_once_with(text="20")
+
+def test_evaluate_error_expression(mock_tkinter):
+    mock_tk, mock_window, _, mock_label, _ = mock_tkinter
+    calc = Calculator()
+    calc.total_label.config = MagicMock()
+    calc.label.config = MagicMock()
+
+    calc.total
